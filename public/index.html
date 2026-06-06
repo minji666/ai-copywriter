@@ -494,9 +494,22 @@
       <li>优先体验新功能</li>
       <li>7天无理由退款</li>
     </ul>
-    <button class="btn-primary" onclick="goPay()" style="margin-bottom:12px;">
-      💳 立即升级
-    </button>
+    <!-- 激活码输入 -->
+    <div style="text-align:left; margin-bottom:16px;">
+      <label style="font-size:14px; font-weight:600;">🔑 已有激活码？直接激活：</label>
+      <div style="display:flex; gap:8px; margin-top:6px;">
+        <input type="text" id="activationCode" placeholder="输入激活码..."
+               style="flex:1; padding:10px; border:2px solid #e2e8f0; border-radius:10px; font-size:14px;">
+        <button onclick="activateCode()" class="btn-secondary" style="white-space:nowrap;">
+          激活
+        </button>
+      </div>
+    </div>
+    <a href="https://mbd.pub" target="_blank" rel="noopener" style="text-decoration:none;">
+      <button class="btn-primary" style="margin-bottom:12px;">
+        💳 前往购买激活码（¥19.9）
+      </button>
+    </a>
     <button class="btn-secondary" onclick="closePaywall()" style="width:100%;">
       暂不需要
     </button>
@@ -541,6 +554,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ===== 加载使用次数 =====
 async function fetchUsage() {
+  if (isActivated()) {
+    updateUsageBadge('∞', 3);
+    return;
+  }
   try {
     const res = await fetch('/api/usage');
     const data = await res.json();
@@ -596,6 +613,7 @@ async function generate() {
         topic: topic,
         keywords: document.getElementById('keywordsInput').value.trim(),
         style: document.getElementById('styleInput').value.trim(),
+        paid: isActivated(),
       }),
     });
 
@@ -714,9 +732,34 @@ function closePaywall() {
 }
 
 function goPay() {
-  // TODO: 接入支付链接（面包多/爱发卡等）
-  showToast('🔜 支付功能即将上线！请先通过其他渠道购买');
-  closePaywall();
+  showToast('🔜 即将跳转到支付页面...');
+}
+
+// ===== 激活码校验 =====
+// 有效的激活码列表（生产环境建议放后端校验）
+const VALID_CODES = ['VIP2024', 'LAUNCH50', 'BETA999'];
+
+function isActivated() {
+  return localStorage.getItem('ai_copywriter_activated') === 'true';
+}
+
+function activateCode() {
+  const codeInput = document.getElementById('activationCode');
+  const code = codeInput.value.trim();
+
+  if (!code) {
+    showToast('⚠️ 请输入激活码');
+    return;
+  }
+
+  if (VALID_CODES.includes(code.toUpperCase())) {
+    localStorage.setItem('ai_copywriter_activated', 'true');
+    showToast('🎉 激活成功！你现在可以无限使用啦');
+    closePaywall();
+    updateUsageBadge('∞', 3);
+  } else {
+    showToast('❌ 激活码无效，请检查后重试');
+  }
 }
 
 // ===== Toast 提示 =====
